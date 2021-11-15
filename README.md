@@ -6,6 +6,8 @@ Arduino-based cheap precision weighing scale for readout via serial communicatio
 Precision weighing scales that include serial port communication usually come at considerable cost. This project showcases an affordable alternative.
 Using readily available electronics parts, the scale's measurements can be read via serial communication by a simple Python class.
 
+_Note:_ The design could easily be extended with an Arduino display to show the measurements.
+
 ### Bill of Materials
 - Arduino Uno (including USB-A to USB-B cable)
 - Load cell amplifier HX711 (Sparkfun), e.g. from mouser.co.uk: 474-SEN-13879
