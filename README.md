@@ -36,6 +36,11 @@ _Note:_ The design could easily be extended with an Arduino display to show the 
   
   ```
 
+### TODO
+- [ ] Add calibration to .ino & .py
+- [ ] Add test curve to .py
+- [ ] Add case/mount drawings
+
 ### Contributors
 Code & electronics by Lars Rollik.  
 Case & load cell mount by Simon Townsend ([Advanced Manufacturing FabLabs], Sainsbury Wellcome Centre).  
