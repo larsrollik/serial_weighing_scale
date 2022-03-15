@@ -43,9 +43,9 @@ scale.read_median(n_readings=5)  # Get median of specified number of measurement
 - [ ] Add case/mount drawings
 
 ### Contributors
-Code & electronics by Lars Rollik.  
-Case & load cell mount by Simon Townsend ([Advanced Manufacturing FabLabs], Sainsbury Wellcome Centre).  
-Thanks to Benjamin Hahl for useful input on the design.  
+Code & electronics by Lars Rollik.
+Case & load cell mount by Simon Townsend ([Advanced Manufacturing FabLabs], Sainsbury Wellcome Centre).
+Thanks to Benjamin Hahl for useful input on the design.
 
 [Advanced Manufacturing FabLabs]: https://www.sainsburywellcome.org/web/content/fablab
 [HX711 wiring tutorial]: https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide

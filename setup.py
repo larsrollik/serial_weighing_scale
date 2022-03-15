@@ -24,7 +24,9 @@ setup(
     author="Lars B. Rollik",
     author_email="L.B.Rollik@protonmail.com",
     license=license_text,
-    install_requires=["pyserial",],
+    install_requires=[
+        "pyserial",
+    ],
     extras_require={
         "dev": [
             "black",
