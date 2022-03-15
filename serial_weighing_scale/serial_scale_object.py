@@ -1,3 +1,4 @@
+import logging
 import time
 
 import numpy as np
@@ -46,7 +47,7 @@ class SerialScale:
         # ! get calibration factor for .ino, but also get scaling factor !
 
     def make_test_curve(self, plot_per_reading=True, savepath=None):
-        self._scale
+        # self._scale
 
         # def do_plotting(
         #     weight_reference: list = None,
@@ -85,7 +86,7 @@ class SerialScale:
         try:
             answer = float(answer)
         except ValueError:
-            print("Could not typecast reading:", answer)
+            logging.debug("Could not typecast reading:", answer)
             answer = None
 
         return answer
@@ -96,19 +97,3 @@ class SerialScale:
             readings.append(self.read_value())
 
         return np.median(readings)
-
-
-TEST_PORTS = [f"/dev/ttyACM{x}" for x in range(5)]
-
-
-def connect_serial_scale(test_ports=TEST_PORTS):
-    from serial import SerialException
-
-    for port in test_ports:
-        try:
-            serial_scale = SerialScale(port=port)
-            break
-        except SerialException:
-            serial_scale = None
-
-    return serial_scale
