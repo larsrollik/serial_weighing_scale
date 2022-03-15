@@ -5,7 +5,7 @@ import numpy as np
 import serial
 
 
-class SerialScale:
+class SerialWeighingScale:
     _scale = None
     port = None
     baudrate = 57600
@@ -24,7 +24,7 @@ class SerialScale:
         write_timeout=0.1,
         auto_connect=True,
     ):
-        super(SerialScale, self).__init__()
+        super(SerialWeighingScale, self).__init__()
         self.port = port or self.port
         self.baudrate = baudrate or self.baudrate
         self.timeout = timeout or self.timeout

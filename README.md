@@ -26,10 +26,10 @@ _Note:_ The design could easily be extended with an Arduino display to show the 
 2. Interact via python `SerialScale` object:
 
   ```python
-  from serial_weighing_scale.serial_scale_object import SerialScale
+  from serial_weighing_scale.serial_scale_object import SerialWeighingScale
 
 serial_port = "/dev/ttyACM0"  # for Unix systems. "COM1" on Windows systems
-scale = SerialScale(port=serial_port)
+scale = SerialWeighingScale(port=serial_port)
 
 scale.tare()  # Tare scale
 scale.read_value()  # Take single measurement
