@@ -1,3 +1,12 @@
+# IDE files
+.idea/
+
+# Ignored file types
+.DS_Store
+
+# Custom config files
+*.conf.custom
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

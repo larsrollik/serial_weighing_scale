@@ -24,17 +24,18 @@ _Note:_ The design could easily be extended with an Arduino display to show the 
 ### Usage
 1. Connect scale via USB to machine that is going to read the measurements from the scale
 2. Interact via python `SerialScale` object:
+
   ```python
-  from serial_scale_object import SerialScale
-  
-  serial_port = "/dev/ttyACM0"  # for Unix systems. "COM1" on Windows systems
-  scale = SerialScale(port=serial_port)
-  
-  scale.tare()  # Tare scale
-  scale.read_value()  # Take single measurement
-  scale.read_median(n_readings=5)  # Get median of specified number of measurements
-  
-  ```
+  from serial_weighing_scale.serial_scale_object import SerialScale
+
+serial_port = "/dev/ttyACM0"  # for Unix systems. "COM1" on Windows systems
+scale = SerialScale(port=serial_port)
+
+scale.tare()  # Tare scale
+scale.read_value()  # Take single measurement
+scale.read_median(n_readings=5)  # Get median of specified number of measurements
+
+```
 
 ### TODO
 - [ ] Add calibration to .ino & .py
