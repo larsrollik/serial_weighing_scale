@@ -1,4 +1,4 @@
-# SerialWeighingScale
+# Serial Weighing Scale
 Arduino-based cheap precision weighing scale for readout via serial communication.
 
 ***
@@ -38,9 +38,9 @@ scale.read_median(n_readings=5)  # Get median of specified number of measurement
 ```
 
 ### TODO
-- [ ] Add calibration to .ino & .py
+- [ ] Add calibration routine to .ino & .py
 - [ ] Add test curve to .py
-- [ ] Add case/mount drawings
+- [ ] Add case and mount drawings for 3D printing
 
 ### Contributors
 Code & electronics by Lars Rollik.
