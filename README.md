@@ -14,7 +14,7 @@ _Note:_ The design could easily be extended with an Arduino display to show the 
 - Load cell (100g and 500g cells used), e.g. from mouser.co.uk: 474-SEN-14727 or 474-SEN-14728
 - Jumper wires, pin headers, nylon spacers for electronics
 - Acrylic or other material of choice for case and load cell mount
-
+- HX711 arduino library from [olkal/HX711_ADC](https://github.com/olkal/HX711_ADC)
 ### Build
 1. Load .ino onto Arduino
 2. Assemble electronics, e.g. as described in this [HX711 wiring tutorial]
