@@ -32,8 +32,8 @@ serial_port = "/dev/ttyACM0"  # for Unix systems. "COM1" on Windows systems
 scale = SerialWeighingScale(port=serial_port)
 
 scale.tare()  # Tare scale
-scale.read_value()  # Take single measurement
-scale.read_median(n_readings=5)  # Get median of specified number of measurements
+scale.read_weight()  # Take single measurement
+scale.read_weight_repeated(n_readings=5)  # Get median of specified number of measurements
 
 ```
 

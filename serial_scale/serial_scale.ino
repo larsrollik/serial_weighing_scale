@@ -1,5 +1,6 @@
 /*
-   Adapted example from HX711 library for SerialWeightScale. Lars Rollik, nov2021.
+   Adapted example from HX711 library for `serial_weighing_scale`. Lars Rollik, nov2021.
+   github.com/larsrollik/serial_weighing_scale
    -------------------------------------------------------------------------------------
    HX711_ADC
    Arduino library for HX711 24-Bit Analog-to-Digital Converter for Weight Scales
@@ -44,11 +45,7 @@ void loop() {
 
     // Tare
     if (inByte == 't') {
-      LoadCell.tareNoDelay();
-
-      if (LoadCell.getTareStatus() == true) {
-        //  Serial.println("Tare complete");
-      }
+      tare_scale();
     }
 
     // Calibrate
@@ -64,9 +61,42 @@ void loop() {
   } // serial
 } // loop
 
+void tare_scale() {
+    LoadCell.tareNoDelay();
+
+    if (LoadCell.getTareStatus() == true) {
+      Serial.println("t");
+    }
+    else {
+      Serial.println("n");  // tare did not work
+    }
+}
 
 void calibrate() {
   /*
-     TODO
+    Receives calibration command
+    Receives float of known_mass
+    Confirms by sending known_mass back
+
+    Wait for "a" (known calibration mass "A"dded to scale)
+    Then: get new calibration value -> Send back
   */
+  Serial.println("c");
+  float known_mass = Serial.read();
+  tare_scale();
+  Serial.println(known_mass);  // confirm receipt
+  LoadCell.setCalFactor(1.0);
+
+  boolean weight_added = false;
+  while (weight_added == false) {
+    char inByte = Serial.read();
+
+    if (inByte == 'a') {
+        LoadCell.update();
+        LoadCell.refreshDataSet();
+        float new_calibration_value = LoadCell.getNewCalibration(known_mass);
+        Serial.println(new_calibration_value);
+        weight_added = true;
+    }
+  }
 }
