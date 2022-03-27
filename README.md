@@ -6,7 +6,9 @@ Arduino-based cheap precision weighing scale for readout via serial communicatio
 Precision weighing scales that include serial port communication usually come at considerable cost. This project showcases an affordable alternative.
 Using readily available electronics parts, the scale's measurements can be read via serial communication by a simple Python class.
 
+
 _Note:_ The design could easily be extended with an Arduino display to show the measurements.
+
 
 ### Bill of Materials
 - Arduino Uno (including USB-A to USB-B cable)
@@ -15,11 +17,14 @@ _Note:_ The design could easily be extended with an Arduino display to show the 
 - Jumper wires, pin headers, nylon spacers for electronics
 - Acrylic or other material of choice for case and load cell mount
 - HX711 arduino library from [olkal/HX711_ADC](https://github.com/olkal/HX711_ADC)
+
+
 ### Build
 1. Load .ino onto Arduino
 2. Assemble electronics, e.g. as described in this [HX711 wiring tutorial]
 3. Move electronics into case
 4. Calibrate scale with python class method `SerialScale.calibrate()`
+
 
 ### Usage
 1. Connect scale via USB to machine that is going to read the measurements from the scale
@@ -72,6 +77,15 @@ while not scale.scale_is_ready():
 known_mass = 45.05  # weight [gram] of object used for claibration
 scale.calibrate(known_mass=known_mass)
 ```
+
+
+### Communication protocol for messages between python and Arduino
+
+- Tare scale: send "t" -> Tare scale & Arduino confirms with "t"
+- Read scale: send "w" -> Arduino returns latest reading
+- Calibrate scale: send "c" + weight of known mass
+  - Arduino confirms by sending known mass value back
+  - Send "a" once known mass was placed on scale -> Arduino performs calibration & returns new calibration factor that needs to be added to `serial_scale.ino`
 
 
 ### TODO
