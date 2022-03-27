@@ -15,30 +15,30 @@ const int HX711_sck  = 3; // CLOCK
 
 HX711_ADC LoadCell(HX711_dout, HX711_sck);
 
-const float calibrationValue = -591.67; // calibration value (see example file "Calibration.ino")
-const float scalingFactor = 5.28;
+const float calibration_factor = -3050.0; // CHANGE THIS VALUE FROM CALIBRATION RESULT
+const float scaling_factor = 1.0;
 
-unsigned long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
+unsigned long stabilizing_time = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
 boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
 
 void setup() {
   Serial.begin(57600); delay(10);
 
   LoadCell.begin();
-  LoadCell.start(stabilizingtime, _tare);
+  LoadCell.start(stabilizing_time, _tare);
 
   if (LoadCell.getTareTimeoutFlag()) {
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
   }
   else {
-    LoadCell.setCalFactor(calibrationValue);
+    LoadCell.setCalFactor(calibration_factor);
   }
 }
 
 void loop() {
   LoadCell.update();
-  float i = LoadCell.getData() / scalingFactor;
+  float i = LoadCell.getData() / scaling_factor;
 
   if (Serial.available() > 0) {
     char inByte = Serial.read();
@@ -46,11 +46,7 @@ void loop() {
     // Tare
     if (inByte == 't') {
       tare_scale();
-    }
-
-    // Calibrate
-    if (inByte == 'c') {
-      calibrate();
+      Serial.println("t");
     }
 
     // Read weight
@@ -58,44 +54,40 @@ void loop() {
       Serial.println(i);
     }
 
+    // Calibrate
+    if (inByte == 'c') {
+      calibrate();
+    }
+
   } // serial
 } // loop
 
 void tare_scale() {
-    LoadCell.tareNoDelay();
-
-    if (LoadCell.getTareStatus() == true) {
-      Serial.println("t");
-    }
-    else {
-      Serial.println("n");  // tare did not work
-    }
+  LoadCell.update();
+  LoadCell.tareNoDelay();
 }
 
 void calibrate() {
-  /*
-    Receives calibration command
-    Receives float of known_mass
-    Confirms by sending known_mass back
-
-    Wait for "a" (known calibration mass "A"dded to scale)
-    Then: get new calibration value -> Send back
-  */
-  Serial.println("c");
-  float known_mass = Serial.read();
-  tare_scale();
-  Serial.println(known_mass);  // confirm receipt
   LoadCell.setCalFactor(1.0);
+  tare_scale();
+
+  float known_mass = Serial.parseFloat();
+  Serial.println(known_mass);  // confirm receipt
 
   boolean weight_added = false;
   while (weight_added == false) {
     char inByte = Serial.read();
+    LoadCell.update();
 
     if (inByte == 'a') {
-        LoadCell.update();
         LoadCell.refreshDataSet();
-        float new_calibration_value = LoadCell.getNewCalibration(known_mass);
-        Serial.println(new_calibration_value);
+        float new_calibration_factor = LoadCell.getNewCalibration(known_mass);
+
+        // return new calibration factor. Requires this typecasting with print to format correctly.
+        Serial.print("");
+        Serial.print(new_calibration_factor);
+        Serial.println("");
+
         weight_added = true;
     }
   }

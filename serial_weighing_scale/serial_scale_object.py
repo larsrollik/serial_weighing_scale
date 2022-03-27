@@ -5,6 +5,9 @@ from typing import Callable
 
 import serial
 
+N_READINGS = 5
+DELAY_BETWEEN_READINGS = 0.01
+
 
 class SerialWeighingScale:
     _scale = None
@@ -17,7 +20,7 @@ class SerialWeighingScale:
     message_to_read = b"w"
     message_to_tare = b"t"
     message_to_calibrate = b"c"
-    write_read_delay = 0.001
+    write_read_delay = 0.010
 
     def __init__(
         self,
@@ -58,7 +61,23 @@ class SerialWeighingScale:
         if self.tare_on_connect:
             self.tare_scale()
 
+        return self
+
+    def _clear_read_queue(self):
+        queue = self._scale.readlines()
+        # print("queue", queue)
+        return queue
+
+    def scale_is_ready(self):
+        return self.read_weight() is not None
+
+    def _decode_answer(self, raw_answer=None):
+        # print("Raw answer:", raw_answer)
+        decoded_answer = raw_answer.decode().split("\r")[0]
+        return decoded_answer
+
     def _send_command(self, command=None):
+        self._clear_read_queue()
         if self._scale is None or command is None:
             print(
                 f"Cannot write to scale -- self._scale: {self._scale}, command: {command}"
@@ -66,14 +85,14 @@ class SerialWeighingScale:
             return None
         self._scale.write(command)
         time.sleep(self.write_read_delay)
-        raw_answer = self._scale.readline()
-        # print("Raw answer:", answer)
-        decoded_answer = raw_answer.decode().split("\r")[0]
+        decoded_answer = self._decode_answer(raw_answer=self._scale.readline())
         return decoded_answer
 
     def tare_scale(self):
         """Tare scale"""
-        return self._send_command(command=self.message_to_tare) == self.message_to_tare
+        return (
+            self._send_command(command=self.message_to_tare) == self.message_to_tare
+        )  # fixme: does not return true
 
     def read_weight(self):
         """Read single value"""
@@ -87,20 +106,24 @@ class SerialWeighingScale:
         return answer
 
     def read_weight_repeated(
-        self, n_readings: int = 5, delay_between_readings: float = 0.05
+        self,
+        n_readings: int = N_READINGS,
+        delay_between_readings: float = DELAY_BETWEEN_READINGS,
     ):
         """Read repeatedly."""
         readings = []
         for _ in range(n_readings):
-            readings.append(self.read_weight())
+            new_reading = self.read_weight()
+            if new_reading is not None:
+                readings.append(new_reading)
             time.sleep(delay_between_readings)
 
         return readings
 
     def read_weight_reliable(
         self,
-        n_readings: int = 5,
-        delay_between_readings: float = 0.05,
+        n_readings: int = N_READINGS,
+        delay_between_readings: float = DELAY_BETWEEN_READINGS,
         measure: Callable = statistics.median,
     ):
         """Read repeatedly, then use `measure` to get measure of central tendency
@@ -114,46 +137,23 @@ class SerialWeighingScale:
         readings = self.read_weight_repeated(
             n_readings=n_readings, delay_between_readings=delay_between_readings
         )
+        if len(readings) < 1:
+            print("No valid readings", readings)
+            return None
+
         return measure(readings)
 
     def calibrate(self, known_mass=None):
-        """"""
-        # Expect confirmation that calibration begun
-        assert (
-            self._send_command(command=self.message_to_calibrate)
-            == self.message_to_calibrate
+        """Calibrate scale with known mass.
+
+        :param known_mass: known mass of any object that can be placed on scale for calibration
+        :return: calibration value that has to be entered in `serial_scale.ino`
+        """
+        # - known_mass_encoded = str(known_mass).encode()
+        # - initialize: cmd = self.message_to_calibrate + known_mass_encoded
+        # - add weight delay, then send: new_calibration_value = self._send_command(b"a")
+        # - clear serial queue in between with: self._clear_read_queue()
+        raise NotImplementedError(
+            f"Use `known_mass={known_mass}` with Arduino IDE serial monitor to calibrate. "
+            f"See README for commands."
         )
-        # Send known mass and expect confirmation of receipt
-        known_mass_b = str(known_mass).encode()
-        assert self._send_command(command=known_mass_b) == known_mass_b
-
-        x = input("Add known mass now to scale. Confirm with Enter.")
-        print(x)  # todo: if x is Enter, then proceed ?
-        new_calibration_value = self._send_command(b"a")
-        print("New calibration value:", new_calibration_value)
-
-    def make_test_curve(self, plot_per_reading=True, savepath=None):
-        # self._scale
-
-        # def do_plotting(
-        #     weight_reference: list = None,
-        #     weight_measured: list = None,
-        #     savepath: str = None,
-        # ):
-        #     pass
-        #
-        # reading_idx = 0
-        # weight_reference = []
-        # weight_measured = []
-
-        pass  # TODO: while loop with user input, then plot entered/measured values + write to file if savepath provided
-        # while True:
-        #   input: a=add datapoint, p=plot, e=end+plot
-        #       if add:
-        #           input: test weight float
-        #           ready to weigh? Y or Enter
-        #               -> Weigh + add both reference/measured to readings (only AFTER reading was a success)
-        #       elif plot:
-        #           do plotting (if savepath is not None: write to file)
-        #
-        # do final plotting: do plotting (if savepath is not None: write to file)

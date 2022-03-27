@@ -25,17 +25,54 @@ _Note:_ The design could easily be extended with an Arduino display to show the 
 1. Connect scale via USB to machine that is going to read the measurements from the scale
 2. Interact via python `SerialScale` object:
 
-  ```python
-  from serial_weighing_scale.serial_scale_object import SerialWeighingScale
+
+##### Open connection with `SerialWeighingScale` object & perform standard operations on it
+```python
+import numpy as np
+import time
+
+from serial_weighing_scale import SerialWeighingScale
 
 serial_port = "/dev/ttyACM0"  # for Unix systems. "COM1" on Windows systems
 scale = SerialWeighingScale(port=serial_port)
 
-scale.tare()  # Tare scale
+while not scale.scale_is_ready():
+    time.sleep(.1)
+
+# Perform standard operations
+scale.tare_scale()  # Tare scale
 scale.read_weight()  # Take single measurement
-scale.read_weight_repeated(n_readings=5)  # Get median of specified number of measurements
+scale.read_weight_repeated(n_readings=5)  # Get n readings
+scale.read_weight_reliable(n_readings=5, measure=np.mean)  # Get statistic of n readings
 
 ```
+
+##### Open connection by testing specific serial ports sequentially
+```python
+import time
+
+from serial_weighing_scale import connect_serial_scale
+
+scale = connect_serial_scale(test_ports=["/dev/ttyACM0", "/dev/ttyACM1"])
+while not scale.scale_is_ready():
+    time.sleep(.1)
+
+```
+
+##### Not yet implemented: Calibrate scale via python
+```python
+import time
+
+from serial_weighing_scale import connect_serial_scale
+
+scale = connect_serial_scale(test_ports=["/dev/ttyACM0", "/dev/ttyACM1"])
+while not scale.scale_is_ready():
+    time.sleep(.1)
+
+known_mass = 45.05  # weight [gram] of object used for claibration
+scale.calibrate(known_mass=known_mass)
+```
+
 
 ### TODO
 - [ ] Add calibration routine to .ino & .py
