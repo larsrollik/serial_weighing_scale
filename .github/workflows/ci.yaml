@@ -17,29 +17,19 @@ jobs:
           pip install .[dev]
       - name: Lint
         run: |
-          black ./ --check
-          flake8
-      
-  check_tag:
+          pre-commit install
+          pre-commit run --all
+
+  check-tag:
     needs: [lint]
     runs-on: ubuntu-latest
-    outputs:
-      run_other_jobs: ${{ steps.check-tag.outputs.run_jobs }}
+    if: contains(github.ref, 'tags') && (!contains(github.ref_name, 'dev')) && (!contains(github.ref_name, 'rc'))
     steps:
-      - name: check tag ${{ github.ref }}
-        id: check-tag
-        run: |
-          if [[${{ github.ref }} =~ refs\/tags\/release\/v[0-9]+\.[0-9]+\.0\.[0-9]+ ]]; then
-            echo "::set-output name=run_jobs::true"
-          else
-            echo "::set-output name=run_jobs::false"
-          fi
-  
+      - run: echo "Tag '${{ github.ref_name }}' is valid."
+
   release:
-    needs: [check_tag]
+    needs: [check-tag]
     runs-on: ubuntu-latest
-    #     if: contains(github.ref, 'tags')
-    if: needs.check_tag.outputs.run_other_jobs == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -51,14 +41,13 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
-          body: Release ${{ github.ref_name }}
+          body: "Release: ${{ github.ref_name }}"
           draft: false
           prerelease: false
-  
+
   deploy:
     needs: [release]
     runs-on: ubuntu-latest
-    if: contains(github.ref, 'tags')
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
