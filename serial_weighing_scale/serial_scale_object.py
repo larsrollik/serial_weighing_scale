@@ -50,6 +50,18 @@ class SerialWeighingScale:
         if auto_connect:
             self.connect()
 
+    @property
+    def connected(self):
+        if self._scale is None:
+            return False
+        else:
+            return self._scale.is_open
+
+    @connected.setter
+    def connected(self, value):
+        if value is not None and not value and self._scale is not None:
+            self._scale.close()
+
     def connect(self):
         """Connect via serial port"""
         self._scale = serial.Serial(
