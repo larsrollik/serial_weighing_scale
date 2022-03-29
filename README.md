@@ -22,8 +22,9 @@ _Note:_ The design could easily be extended with an Arduino display to show the 
 ### Build
 1. Load .ino onto Arduino
 2. Assemble electronics, e.g. as described in this [HX711 wiring tutorial]
-3. Move electronics into case
-4. Calibrate scale with python class method `SerialScale.calibrate()`
+3. Print 3D components from [drawings](./drawings_for_3D_printing) (Drawings named `model` are only for design, no need to print these)
+4. Move electronics into case
+5. Calibrate scale via Arduino IDE serial monitor commands. See below for communication protocol for calibration.
 
 
 ### Usage
@@ -91,11 +92,10 @@ scale.calibrate(known_mass=known_mass)
 ### TODO
 - [ ] Add calibration routine to .ino & .py
 - [ ] Add test curve to .py
-- [ ] Add case and mount drawings for 3D printing
 
 ### Contributors
 Code & electronics by Lars Rollik.
-Case & load cell mount by Simon Townsend ([Advanced Manufacturing FabLabs], Sainsbury Wellcome Centre).
+Scale 3D printing drawings by Simon Townsend ([Advanced Manufacturing FabLabs], Sainsbury Wellcome Centre).
 Thanks to Benjamin Hahl for useful input on the design.
 
 [Advanced Manufacturing FabLabs]: https://www.sainsburywellcome.org/web/content/fablab
