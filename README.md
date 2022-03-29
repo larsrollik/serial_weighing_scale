@@ -20,7 +20,7 @@ _Note:_ The design could easily be extended with an Arduino display to show the 
 
 
 ### Build
-1. Load .ino onto Arduino
+1. Load .ino onto Arduino (via Arduino IDE or commandline like `arduino --board arduino:avr:uno --port /dev/ttyACM0 --upload serial_scale.ino`)
 2. Assemble electronics, e.g. as described in this [HX711 wiring tutorial]
 3. Print 3D components from [drawings](./drawings_for_3D_printing) (Drawings named `model` are only for design, no need to print these)
 4. Move electronics into case
