@@ -70,6 +70,15 @@ class SerialWeighingScale:
             timeout=self.timeout,
             write_timeout=self.write_timeout,
         )
+
+        # make sure this is a scale
+        retry = 10
+        for this_try in range(retry):
+            logging.debug(f"Trying to read first weight. Retry #{this_try}")
+            if self.scale_is_ready():
+                break
+            time.sleep(.01)
+
         if self.tare_on_connect:
             self.tare_scale()
 
