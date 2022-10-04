@@ -20,7 +20,7 @@ class SerialWeighingScale:
     message_to_read = b"w"
     message_to_tare = b"t"
     message_to_calibrate = b"c"
-    write_read_delay = 0.010
+    write_read_delay = 0.01
 
     def __init__(
         self,
@@ -77,7 +77,7 @@ class SerialWeighingScale:
             logging.debug(f"Trying to read first weight. Retry #{this_try}")
             if self.scale_is_ready():
                 break
-            time.sleep(.01)
+            time.sleep(0.01)
 
         if self.tare_on_connect:
             self.tare_scale()
