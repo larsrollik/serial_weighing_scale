@@ -121,7 +121,7 @@ class SerialWeighingScale:
         try:
             answer = float(answer)
         except ValueError:
-            logging.debug("Could not typecast reading:", answer)
+            logging.debug(f"Could not typecast reading: {answer}")
             answer = None
 
         return answer
