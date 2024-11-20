@@ -14,7 +14,7 @@ with open(path.join(this_directory, "LICENSE")) as f:
 
 setup(
     name="serial_weighing_scale",
-    version="0.0.6",
+    version="1.0.0.dev0",
     description="serial_weighing_scale",
     long_description=long_description,
     long_description_content_type="text/markdown",
