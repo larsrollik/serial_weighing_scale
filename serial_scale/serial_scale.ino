@@ -11,63 +11,90 @@
 #include <HX711_ADC.h>
 
 // DEFINITIONS
-#define CMD_SERIAL Serial
+#define CMD Serial
 #define HX711_DOUT 2 // DATA
 #define HX711_SCK  3 // CLOCK
-#define SAMPLES_IN_USE 5  // number of samples to average for measurement, less will cause more noise but faster response
+#define SAMPLES_IN_USE 1  // number of samples to average for measurement, less will cause more noise but faster response
 #define CALIBRATION_FACTOR -3150 // CHANGE THIS VALUE FROM CALIBRATION RESULT
 #define SCALING_FACTOR 1.0
 #define STABILIZING_TIME 2000 // precision right after power-up can be improved by adding a few seconds of stabilizing time
 #define PERFORM_TARE true // set to false if you don't want tare to be performed in the next step
+#define DEBUG_PRINT false
+
 
 // INSTANCE of LoadCell object
 HX711_ADC LoadCell(HX711_DOUT, HX711_SCK);
 
 
 void setup() {
-  CMD_SERIAL.begin(115200);
-  delay(10);
-
   LoadCell.begin();
   LoadCell.start(STABILIZING_TIME, PERFORM_TARE);
   LoadCell.setSamplesInUse(SAMPLES_IN_USE);
 
+  CMD.begin(115200);
+  while (!CMD)
+    ;
+
   if (LoadCell.getTareTimeoutFlag()) {
-    CMD_SERIAL.println("Timeout, check MCU>HX711 wiring and pin designations");
+    CMD.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
   } else {
     LoadCell.setCalFactor(CALIBRATION_FACTOR);
+    CMD.println("READY");
   }
 }
 
 void loop() {
-  if (CMD_SERIAL.available() > 0) {
-    char inByte = CMD_SERIAL.read();
+//   LoadCell.refreshDataSet();
+//   LoadCell.update();
+//   float i = LoadCell.getData() / SCALING_FACTOR;
 
-    // Tare the scale
-    if (inByte == 't') {
-      tare_scale();
-      CMD_SERIAL.println("t");
-    }
+  if (CMD.available()) {
+    char cmdChar = CMD.read();
 
-    // Read weight
-    if (inByte == 'w') {
+    switch (cmdChar)
+    {
+    case 'w':                 // Return weight
+      unsigned long startTime = millis();
+
       LoadCell.refreshDataSet();
       LoadCell.update();
       float i = LoadCell.getData() / SCALING_FACTOR;
-      CMD_SERIAL.println(i);
-    }
+      CMD.println(i);
 
-    // Calibrate
-    if (inByte == 'c') {
+      if (DEBUG_PRINT) {
+        unsigned long endTime = millis();    // Record the end time
+
+        // Calculate and print the elapsed time
+        unsigned long dt = endTime - startTime;
+        CMD.println("Time taken (dt): " + String(dt) + " ms");
+      }//if
+
+      break;
+
+    case 't':
+      tare_scale();
+      CMD.println("t");
+      break;
+
+    case 'c':
       calibrate();
-    }
+      break;
+
+    default:
+      //                 if (DEBUG_PRINT)
+      //                     Serial.println("Invalid command");
+      break;
+      }//switch
+
   }//cmd serial input
 }//loop
 
 // Function to tare the scale
 int tare_scale() {
-  LoadCell.tareNoDelay();  // Start tare without delay
+  // LoadCell.tareNoDelay();  // Start tare without delay
+  LoadCell.tare(); // Start tare (blocking)
+
   // unsigned long startTime = millis();  // Track the time to avoid infinite waiting
 
   // // Wait for the tare process to finish, with a timeout
@@ -83,7 +110,7 @@ int tare_scale() {
   // }
 
   // // If the tare is complete, send confirmation byte and return 0 (success)
-  // CMD_SERIAL.write(0);  // Send confirmation byte (0) after tare completion
+  // CMD.write(0);  // Send confirmation byte (0) after tare completion
   // return 0;  // Tare succeeded
 }
 
@@ -92,33 +119,33 @@ void calibrate() {
   LoadCell.setCalFactor(1.0);  // Reset calibration factor to default
   tare_scale();  // Tare the scale before calibration
 
-  CMD_SERIAL.println("Make sure to send 'c' calibrate command and known mass float each without line ending!");
-  CMD_SERIAL.println("Please enter the known mass (in grams) and press Enter:");
-  while (!CMD_SERIAL.available()) {
+  CMD.println("Make sure to send 'c' calibrate command and known mass float each without line ending!");
+  CMD.println("Please enter the known mass (in grams) and press Enter:");
+  while (!CMD.available()) {
     // Wait for the user to submit the known mass
     delay(100);
   }
 
   // Read the known mass input from serial
-  float known_mass = CMD_SERIAL.parseFloat();
-  CMD_SERIAL.print("Known mass received: ");
-  CMD_SERIAL.println(known_mass);  // Confirm receipt of known mass
+  float known_mass = CMD.parseFloat();
+  CMD.print("Known mass received: ");
+  CMD.println(known_mass);  // Confirm receipt of known mass
 
-  CMD_SERIAL.println("Now, please place the known weight on the scale and press 'a' to begin calibration.");
+  CMD.println("Now, please place the known weight on the scale and press 'a' to begin calibration.");
 
   boolean weight_added = false;
   while (!weight_added) {
-    if (CMD_SERIAL.available()) {
-      char inByte = CMD_SERIAL.read();  // Read input from user
+    if (CMD.available()) {
+      char cmdChar = CMD.read();  // Read input from user
       LoadCell.update();  // Update load cell reading
 
       // Wait for user to confirm the weight is placed and press 'a'
-      if (inByte == 'a') {
+      if (cmdChar == 'a') {
         LoadCell.refreshDataSet();  // Refresh data from the load cell
         float new_calibration_factor = LoadCell.getNewCalibration(known_mass);
 
-        CMD_SERIAL.print("New calibration factor: ");
-        CMD_SERIAL.println(new_calibration_factor);
+        CMD.print("New calibration factor: ");
+        CMD.println(new_calibration_factor);
 
         weight_added = true;  // Calibration is complete
       }

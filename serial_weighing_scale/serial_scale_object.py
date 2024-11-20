@@ -1,180 +1,159 @@
 import logging
 import statistics
 import time
+from typing import Any
 from typing import Callable
+from typing import Union
 
-import serial
+from serial_weighing_scale._serial_connection import SerialConnection
+
+DEFAULT_SERIAL_PORT = "/dev/ttyACM0"
+DEFAULT_BAUD_RATE = 115200
+DEFAULT_TIMEOUT = 0.2
+# DEFAULT_WRITE_TIMEOUT = 0.1
+DEFAULT_TARE_ON_CONNECT = True
+DEFAULT_AUTO_CONNECT = True
+
+# Default CMD commands
+DEFAULT_CMD_TO_READ = "w"
+DEFAULT_CMD_TO_TARE = "t"
+DEFAULT_CMD_TO_CALIBRATE = "c"
+DEFAULT_WRITE_READ_DELAY = 0.5
 
 N_READINGS = 5
-DELAY_BETWEEN_READINGS = 0.01
 
 
 class SerialWeighingScale:
     _scale = None
-    port = None
-    baudrate = 57600
-    timeout = 0.1
-    write_timeout = 0.1
-    tare_on_connect = True
+    serial_port = None
+    baudrate = DEFAULT_BAUD_RATE
+    timeout = DEFAULT_TIMEOUT
+    # write_timeout = DEFAULT_WRITE_TIMEOUT
+    tare_on_connect = DEFAULT_TARE_ON_CONNECT
+    auto_connect = DEFAULT_AUTO_CONNECT
 
-    message_to_read = b"w"
-    message_to_tare = b"t"
-    message_to_calibrate = b"c"
-    write_read_delay = 0.01
+    message_to_read = DEFAULT_CMD_TO_READ
+    message_to_tare = DEFAULT_CMD_TO_TARE
+    message_to_calibrate = DEFAULT_CMD_TO_CALIBRATE
+    write_read_delay = DEFAULT_WRITE_READ_DELAY
 
     def __init__(
         self,
-        port="/dev/ttyACM0",
-        baudrate=57600,
-        timeout=0.1,
-        write_timeout=0.1,
-        auto_connect=True,
-        tare_on_connect=True,
+        serial_port: Union[str, None] = None,
+        baudrate: Union[int, None] = None,
+        timeout: Union[float, None] = None,
+        tare_on_connect: bool = DEFAULT_TARE_ON_CONNECT,
+        auto_connect: bool = DEFAULT_AUTO_CONNECT,
+        **kwargs: Any,
     ):
-        """
+        self.serial_port = serial_port or DEFAULT_SERIAL_PORT
+        self.baudrate = baudrate or DEFAULT_BAUD_RATE
+        self.timeout = timeout or DEFAULT_TIMEOUT
+        self.tare_on_connect = tare_on_connect
+        self.auto_connect = auto_connect
+        self._scale = None
 
-        :param port:
-        :param baudrate:
-        :param timeout:
-        :param write_timeout:
-        :param auto_connect:
-        :param tare_on_connect:
-        """
-        super(SerialWeighingScale, self).__init__()
-        self.port = port or self.port
-        self.baudrate = baudrate or self.baudrate
-        self.timeout = timeout or self.timeout
-        self.write_timeout = write_timeout or self.write_timeout
-        self.tare_on_connect = tare_on_connect or self.tare_on_connect
-
-        if auto_connect:
+        if self.auto_connect:
             self.connect()
 
     @property
     def connected(self):
-        if self._scale is None:
-            return False
-        else:
-            return self._scale.is_open
+        """Returns whether the scale is connected."""
+        return self._scale is not None and self._scale.ser.is_open
 
     @connected.setter
-    def connected(self, value):
-        if value is not None and not value and self._scale is not None:
+    def connected(self, value: bool):
+        """Setter to connect or disconnect the scale."""
+        if value:
+            self.connect()
+        else:
             self._scale.close()
+            self._scale = None
 
     def connect(self):
-        """Connect via serial port"""
-        self._scale = serial.Serial(
-            port=self.port,
-            baudrate=self.baudrate,
-            timeout=self.timeout,
-            write_timeout=self.write_timeout,
-        )
+        """Connects to the scale."""
+        if self._scale is None:
+            logging.debug(
+                f"Connecting to {self.serial_port} with rate {self.baudrate} / timeout {self.timeout}"
+            )
+            self._scale = SerialConnection(
+                serial_port=self.serial_port,
+                baudrate=self.baudrate,
+                timeout=self.timeout,
+            )
+            self._scale.connect()
 
-        # make sure this is a scale
-        retry = 10
-        for this_try in range(retry):
-            logging.debug(f"Trying to read first weight. Retry #{this_try}")
-            if self.scale_is_ready():
-                break
-            time.sleep(0.01)
-
-        if self.tare_on_connect:
-            self.tare_scale()
-
+            if self.tare_on_connect:
+                self.tare()
         return self
 
-    def _clear_read_queue(self):
-        queue = self._scale.readlines()
-        # print("queue", queue)
-        return queue
-
-    def scale_is_ready(self):
+    def scale_is_ready(self) -> bool:
+        """Returns whether the scale is ready by checking if weight is read successfully."""
         return self.read_weight() is not None
 
-    def _decode_answer(self, raw_answer=None):
-        # print("Raw answer:", raw_answer)
-        decoded_answer = raw_answer.decode().split("\r")[0]
-        return decoded_answer
+    def tare(self):
+        """Sends a tare command to the scale."""
+        if self._scale:
+            self._scale.send_and_readline("t")
+            print("Tare command sent.")
+        else:
+            raise ValueError("Scale is not connected")
 
-    def _send_command(self, command=None):
-        self._clear_read_queue()
-        if self._scale is None or command is None:
-            print(
-                f"Cannot write to scale -- self._scale: {self._scale}, command: {command}"
+    def read_weight(self) -> float:
+        """Reads the weight from the scale."""
+        if self._scale:
+            response = self._scale.send_and_readline(
+                data=DEFAULT_CMD_TO_READ, delay=self.write_read_delay
             )
-            return None
-        self._scale.write(command)
-        time.sleep(self.write_read_delay)
-        decoded_answer = self._decode_answer(raw_answer=self._scale.readline())
-        return decoded_answer
 
-    def tare_scale(self):
-        """Tare scale"""
-        return (
-            self._send_command(command=self.message_to_tare) == self.message_to_tare
-        )  # fixme: does not return true
+            try:
+                return float(response)
+            except ValueError:
+                print(f"Failed to convert '{response}' to float.")
+                return
+        else:
+            raise ValueError("Scale is not connected")
 
-    def read_weight(self):
-        """Read single value"""
-        answer = self._send_command(command=self.message_to_read)
-        try:
-            answer = float(answer)
-        except ValueError:
-            logging.debug(f"Could not typecast reading: {answer}")
-            answer = None
-
-        return answer
-
-    def read_weight_repeated(
-        self,
-        n_readings: int = N_READINGS,
-        delay_between_readings: float = DELAY_BETWEEN_READINGS,
-    ):
-        """Read repeatedly."""
+    def read_weight_repeated(self, n_readings: int, inter_read_delay: float) -> list:
+        """Reads the weight repeatedly, returns a list of readings."""
         readings = []
         for _ in range(n_readings):
-            new_reading = self.read_weight()
-            if new_reading is not None:
-                readings.append(new_reading)
-            time.sleep(delay_between_readings)
-
+            reading = self.read_weight()
+            if reading is not None:
+                readings.append(reading)
+            time.sleep(inter_read_delay)
         return readings
 
     def read_weight_reliable(
         self,
-        n_readings: int = N_READINGS,
-        delay_between_readings: float = DELAY_BETWEEN_READINGS,
+        n_readings: int,
+        inter_read_delay: float,
         measure: Callable = statistics.median,
-    ):
-        """Read repeatedly, then use `measure` to get measure of central tendency
-
-        :param n_readings:
-        :param delay_between_readings:
-        :param measure: `mean` or `median` or function
-        :return:
-        """
-        assert isinstance(measure, Callable)
-        readings = self.read_weight_repeated(
-            n_readings=n_readings, delay_between_readings=delay_between_readings
-        )
-        if len(readings) < 1:
-            print("No valid readings", readings)
-            return None
-
+    ) -> float:
+        """Reads the weight reliably by taking repeated readings and applying the provided statistical measure."""
+        readings = self.read_weight_repeated(n_readings, inter_read_delay)
         return measure(readings)
 
-    def calibrate(self, known_mass=None):
-        """Calibrate scale with known mass.
+    def calibrate(self, known_mass: float):
+        """Calibrate the scale with a known mass."""
+        if self._scale:
+            self._scale.send("c")
+            self._scale.send(known_mass)
+            print(f"Calibration command sent for known mass: {known_mass}")
+            # Wait for the user to place the known mass on the scale
+            input("Place the known mass on the scale and press Enter when ready...")
 
-        :param known_mass: known mass of any object that can be placed on scale for calibration
-        :return: calibration value that has to be entered in `serial_scale.ino`
-        """
-        # - known_mass_encoded = str(known_mass).encode()
-        # - initialize: cmd = self.message_to_calibrate + known_mass_encoded
-        # - add weight delay, then send: new_calibration_value = self._send_command(b"a")
-        # - clear serial queue in between with: self._clear_read_queue()
-        raise NotImplementedError(
-            f"Use `known_mass={known_mass}` with Arduino IDE serial monitor to calibrate. "
-            f"See README for commands."
-        )
+            # After mass is placed, confirm and send 'a' to complete the calibration
+            self._scale.write_message("a")
+            calibration_result = self._scale.read_response()
+            print(f"Calibration result: {calibration_result}")
+        else:
+            raise ValueError("Scale is not connected")
+
+
+if __name__ == "__main__":
+    s = SerialWeighingScale(serial_port="/dev/ttyACM1", timeout=1)
+    s.connect()
+    s.scale_is_ready()
+
+    print(" ")
