@@ -94,8 +94,19 @@ class SerialWeighingScale:
     def tare(self):
         """Sends a tare command to the scale."""
         if self._scale:
-            self._scale.send_and_readline("t")
+            self._scale.send("t")
             print("Tare command sent.")
+
+            # # Wait for the response for up to 5 seconds
+            # start_time = time.time()
+            # while time.time() - start_time < 5:
+            #     response = self._scale.readline()
+            #     if response == "t":
+            #         print("Tare command confirmed.")
+            #         break
+            # else:
+            #     # If the loop completes without finding the expected response
+            #     print("Error: Tare command not confirmed within 5 seconds.")
         else:
             raise ValueError("Scale is not connected")
 
@@ -107,7 +118,7 @@ class SerialWeighingScale:
             )
 
             try:
-                return float(response)
+                return round(float(response), 3)
             except ValueError:
                 print(f"Failed to convert '{response}' to float.")
                 return

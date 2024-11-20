@@ -12,13 +12,13 @@
 
 // DEFINITIONS
 #define CMD Serial
-#define HX711_DOUT 2 // DATA
-#define HX711_SCK  3 // CLOCK
-#define SAMPLES_IN_USE 1  // number of samples to average for measurement, less will cause more noise but faster response
-#define CALIBRATION_FACTOR -3150 // CHANGE THIS VALUE FROM CALIBRATION RESULT
+#define HX711_DOUT 2              // DATA
+#define HX711_SCK 3               // CLOCK
+#define SAMPLES_IN_USE 1          // number of samples to average for measurement, less will cause more noise but faster response
+#define CALIBRATION_FACTOR -3150  // CHANGE THIS VALUE FROM CALIBRATION RESULT
 #define SCALING_FACTOR 1.0
-#define STABILIZING_TIME 2000 // precision right after power-up can be improved by adding a few seconds of stabilizing time
-#define PERFORM_TARE true // set to false if you don't want tare to be performed in the next step
+#define STABILIZING_TIME 2000  // precision right after power-up can be improved by adding a few seconds of stabilizing time
+#define PERFORM_TARE true      // set to false if you don't want tare to be performed in the next step
 #define DEBUG_PRINT false
 
 
@@ -37,24 +37,29 @@ void setup() {
 
   if (LoadCell.getTareTimeoutFlag()) {
     CMD.println("Timeout, check MCU>HX711 wiring and pin designations");
-    while (1);
+    while (1)
+      ;
   } else {
     LoadCell.setCalFactor(CALIBRATION_FACTOR);
-    CMD.println("READY");
+
+    if (DEBUG_PRINT)
+      CMD.println("READY");
   }
 }
 
 void loop() {
-//   LoadCell.refreshDataSet();
-//   LoadCell.update();
-//   float i = LoadCell.getData() / SCALING_FACTOR;
+  //   LoadCell.refreshDataSet();
+  //   LoadCell.update();
+  //   float i = LoadCell.getData() / SCALING_FACTOR;
 
   if (CMD.available()) {
     char cmdChar = CMD.read();
 
-    switch (cmdChar)
-    {
-    case 'w':                 // Return weight
+    if (DEBUG_PRINT) {
+      CMD.println("cmd: " + String(cmdChar));  // Print cmdChar for debugging
+    }
+
+    if (cmdChar == 'w') {
       unsigned long startTime = millis();
 
       LoadCell.refreshDataSet();
@@ -63,37 +68,37 @@ void loop() {
       CMD.println(i);
 
       if (DEBUG_PRINT) {
-        unsigned long endTime = millis();    // Record the end time
-
+        unsigned long endTime = millis();  // Record the end time
         // Calculate and print the elapsed time
         unsigned long dt = endTime - startTime;
         CMD.println("Time taken (dt): " + String(dt) + " ms");
-      }//if
+      }  //if
+    }    //if
 
-      break;
+    if (cmdChar == 't') {
 
-    case 't':
+      if (DEBUG_PRINT) {
+        CMD.println("taring");  // Print cmdChar for debugging
+      }
+
       tare_scale();
+
       CMD.println("t");
-      break;
 
-    case 'c':
+    }  //if
+
+    if (cmdChar == 'c') {
+
       calibrate();
-      break;
+    }  //if
 
-    default:
-      //                 if (DEBUG_PRINT)
-      //                     Serial.println("Invalid command");
-      break;
-      }//switch
-
-  }//cmd serial input
-}//loop
+  }  //cmd serial input
+}  //loop
 
 // Function to tare the scale
 int tare_scale() {
   // LoadCell.tareNoDelay();  // Start tare without delay
-  LoadCell.tare(); // Start tare (blocking)
+  LoadCell.tare();  // Start tare (blocking)
 
   // unsigned long startTime = millis();  // Track the time to avoid infinite waiting
 
@@ -117,7 +122,7 @@ int tare_scale() {
 
 void calibrate() {
   LoadCell.setCalFactor(1.0);  // Reset calibration factor to default
-  tare_scale();  // Tare the scale before calibration
+  tare_scale();                // Tare the scale before calibration
 
   CMD.println("Make sure to send 'c' calibrate command and known mass float each without line ending!");
   CMD.println("Please enter the known mass (in grams) and press Enter:");
@@ -137,7 +142,7 @@ void calibrate() {
   while (!weight_added) {
     if (CMD.available()) {
       char cmdChar = CMD.read();  // Read input from user
-      LoadCell.update();  // Update load cell reading
+      LoadCell.update();          // Update load cell reading
 
       // Wait for user to confirm the weight is placed and press 'a'
       if (cmdChar == 'a') {
