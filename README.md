@@ -93,6 +93,11 @@ scale.calibrate(known_mass=known_mass)
 - [ ] Add calibration routine to .ino & .py
 - [ ] Add test curve to .py
 
+
+## NOTES
+- calibration for first scale with 28.22g weight: -3150
+- calibration for second scale with 45.05g weight: -2894
+
 ### Contributors
 Code & electronics by Lars Rollik.
 Scale 3D printing drawings by Simon Townsend ([Advanced Manufacturing FabLabs], Sainsbury Wellcome Centre).

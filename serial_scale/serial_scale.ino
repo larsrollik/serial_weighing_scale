@@ -92,6 +92,11 @@ void loop() {
       calibrate();
     }  //if
 
+    if (cmdChar == 'r') {
+
+      CMD.println("{'calibration_factor': " + String(CALIBRATION_FACTOR) + "}");
+    }  //if
+
   }  //cmd serial input
 }  //loop
 
