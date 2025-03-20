@@ -1,7 +1,7 @@
 from serial_weighing_scale.serial_scale_object import SerialWeighingScale
 
 __author__ = "Lars B. Rollik"
-__version__ = "1.0.1.dev0"
+__version__ = "1.0.1"
 
 TEST_PORTS = [f"/dev/ttyACM{x}" for x in range(5)]
 
