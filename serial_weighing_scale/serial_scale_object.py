@@ -95,18 +95,18 @@ class SerialWeighingScale:
         """Sends a tare command to the scale."""
         if self._scale:
             self._scale.send("t")
-            print("Tare command sent.")
+            logging.debug("Tare command sent.")
 
             # # Wait for the response for up to 5 seconds
             # start_time = time.time()
             # while time.time() - start_time < 5:
             #     response = self._scale.readline()
             #     if response == "t":
-            #         print("Tare command confirmed.")
+            #         logging.debug("Tare command confirmed.")
             #         break
             # else:
             #     # If the loop completes without finding the expected response
-            #     print("Error: Tare command not confirmed within 5 seconds.")
+            #     logging.debug("Error: Tare command not confirmed within 5 seconds.")
         else:
             raise ValueError("Scale is not connected")
 
@@ -120,7 +120,7 @@ class SerialWeighingScale:
             try:
                 return round(float(response), 3)
             except ValueError:
-                print(f"Failed to convert '{response}' to float.")
+                logging.debug(f"Failed to convert '{response}' to float.")
                 return
         else:
             raise ValueError("Scale is not connected")
@@ -150,14 +150,14 @@ class SerialWeighingScale:
         if self._scale:
             self._scale.send("c")
             self._scale.send(known_mass)
-            print(f"Calibration command sent for known mass: {known_mass}")
+            logging.debug(f"Calibration command sent for known mass: {known_mass}")
             # Wait for the user to place the known mass on the scale
             input("Place the known mass on the scale and press Enter when ready...")
 
             # After mass is placed, confirm and send 'a' to complete the calibration
             self._scale.write_message("a")
             calibration_result = self._scale.read_response()
-            print(f"Calibration result: {calibration_result}")
+            logging.debug(f"Calibration result: {calibration_result}")
         else:
             raise ValueError("Scale is not connected")
 
@@ -167,4 +167,4 @@ if __name__ == "__main__":
     s.connect()
     s.scale_is_ready()
 
-    print(" ")
+    logging.debug("EXITING.")
