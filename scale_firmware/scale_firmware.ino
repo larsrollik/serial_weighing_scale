@@ -27,13 +27,16 @@ HX711_ADC LoadCell(HX711_DOUT, HX711_SCK);
 
 
 void setup() {
-  LoadCell.begin();
-  LoadCell.start(STABILIZING_TIME, PERFORM_TARE);
-  LoadCell.setSamplesInUse(SAMPLES_IN_USE);
-
   CMD.begin(115200);
   while (!CMD)
     ;
+
+  identifyMyself();
+  
+  // initialize the scale
+  LoadCell.begin();
+  LoadCell.start(STABILIZING_TIME, PERFORM_TARE);
+  LoadCell.setSamplesInUse(SAMPLES_IN_USE);
 
   if (LoadCell.getTareTimeoutFlag()) {
     logMessage("Timeout, check MCU>HX711 wiring and pin designations");
@@ -44,6 +47,7 @@ void setup() {
 
     if (DEBUG_PRINT)
       logMessage("ready.");
+
   }
 }  // setup
 
@@ -80,6 +84,11 @@ void loop() {
       commandChar = buffer[0];
 
       switch (commandChar) {
+        case 'i':
+          // identify as scale
+          identifyMyself();
+          break;
+
         case 'w':
           // read weight
 
@@ -121,6 +130,9 @@ void loop() {
   }    // while
 }  // loop
 
+void identifyMyself() {
+  CMD.println("<SerialWeighingScale>");
+}
 
 void logMessage(const String& msg) {
   CMD.print("LOG: ");

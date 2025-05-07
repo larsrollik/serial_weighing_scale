@@ -36,6 +36,7 @@ def connect_serial_scale(
     for serial_port in serial_port_list:
         try:
             serial_scale = SerialWeighingScale(serial_port=serial_port)
+            serial_scale.connect()
             break
         except SerialException:
             pass
