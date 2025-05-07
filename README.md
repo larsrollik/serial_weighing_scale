@@ -42,6 +42,7 @@ from serial_weighing_scale import SerialWeighingScale
 
 serial_port = "/dev/ttyACM0"  # for Unix systems. "COM1" on Windows systems
 scale = SerialWeighingScale(port=serial_port)
+scale.connect()
 
 while not scale.scale_is_ready():
     time.sleep(.1)
