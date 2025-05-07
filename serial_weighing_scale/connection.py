@@ -1,5 +1,6 @@
 import logging
 import struct
+import time
 from typing import Any
 
 from serial import Serial
@@ -10,6 +11,7 @@ class SerialConnection:
     baudrate: int
     timeout: float
     connection: Serial
+    _identity_response = "<SerialWeighingScale>"
 
     def __init__(
         self,
@@ -21,6 +23,7 @@ class SerialConnection:
         self.serial_port = serial_port
         self.baudrate = baudrate or 115200
         self.timeout = timeout or 0.1
+        self.connection = None
 
     def dict(self) -> dict:
         class_data = {
@@ -50,13 +53,30 @@ class SerialConnection:
         else:
             return False
 
-    def connect(self) -> "SerialConnection":
+    def connect(self, connection_timeout: float = 5) -> "SerialConnection":
         if not self.connected:
             self.connection = Serial(
                 port=self.serial_port,
                 baudrate=self.baudrate,
                 timeout=self.timeout,
             )
+
+            # identify device
+            start_time = time.time()
+            while time.time() - start_time < connection_timeout:
+                if self.connection.in_waiting:
+                    response = self.read_line()
+                    if response.startswith(self._identity_response):
+                        logging.info(
+                            f"Identity response received: {response} from {self.serial_port}"
+                        )
+                        break
+            else:
+                raise TimeoutError(
+                    f"Timeout while waiting for identity response ({self._identity_response}) "
+                    f"from {self.serial_port}"
+                )
+
             # is open?
             if self.connection.is_open:
                 logging.info(f"Connected to {self.serial_port} at {self.baudrate} baud.")
