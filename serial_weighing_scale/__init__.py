@@ -1,23 +1,41 @@
-from serial_weighing_scale.serial_scale_object import SerialWeighingScale
-
 __author__ = "Lars B. Rollik"
-__version__ = "1.0.1"
+
+from importlib.metadata import PackageNotFoundError, version
+
+from serial_weighing_scale.scale import Scale
+
+try:
+    __version__ = version("subject_weight_db")
+except PackageNotFoundError:
+    __version__ = "2.0.0"
 
 TEST_PORTS = [f"/dev/ttyACM{x}" for x in range(5)]
 
+# make compatibility pseudonym SerialWeighingScale
+SerialWeighingScale = Scale
 
-def connect_serial_scale(test_ports: list = TEST_PORTS):
-    """Connect to the serial scale. Returns scale object.
+__all__ = ["Scale", "SerialWeighingScale"]
 
-    :param test_ports: list of serial port addresses to test for connection
-    :return: SerialWeighingScale object
+
+def connect_serial_scale(
+    serial_port_list: list = TEST_PORTS,
+) -> SerialWeighingScale | None:
+    """
+    Connect to the first available serial scale from the provided list of serial ports.
+    Parameters
+    ----------
+    serial_port_list
+
+    Returns
+    -------
+
     """
     from serial import SerialException
 
     serial_scale = None
-    for port in test_ports:
+    for serial_port in serial_port_list:
         try:
-            serial_scale = SerialWeighingScale(port=port)
+            serial_scale = SerialWeighingScale(serial_port=serial_port)
             break
         except SerialException:
             pass

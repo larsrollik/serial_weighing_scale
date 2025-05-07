@@ -36,101 +36,134 @@ void setup() {
     ;
 
   if (LoadCell.getTareTimeoutFlag()) {
-    CMD.println("Timeout, check MCU>HX711 wiring and pin designations");
+    logMessage("Timeout, check MCU>HX711 wiring and pin designations");
     while (1)
       ;
   } else {
     LoadCell.setCalFactor(CALIBRATION_FACTOR);
 
     if (DEBUG_PRINT)
-      CMD.println("READY");
+      logMessage("ready.");
   }
-}
+}  // setup
+
 
 void loop() {
   //   LoadCell.refreshDataSet();
-  //   LoadCell.update();
+  LoadCell.update();
   //   float i = LoadCell.getData() / SCALING_FACTOR;
 
-  if (CMD.available()) {
-    char cmdChar = CMD.read();
+  static byte startByte = '<';
+  static byte stopByte = '>';
+  static byte commandChar;
+  // static uint16_t int1;
+  // static uint16_t int2;
 
-    if (DEBUG_PRINT) {
-      CMD.println("cmd: " + String(cmdChar));  // Print cmdChar for debugging
+  static bool receiving = false;
+  static byte buffer[256];
+  static int bufferIndex = 0;
+
+  // Check if data is available
+  while (CMD.available()) {
+    byte incomingByte = CMD.read();
+
+    if (incomingByte == startByte) {
+      // Start receiving message
+      receiving = true;
+      bufferIndex = 0;
+      continue;
     }
 
-    if (cmdChar == 'w') {
-      unsigned long startTime = millis();
+    // EVAL: Stop receiving message and process data
+    if (incomingByte == stopByte) {
+      receiving = false;
+      commandChar = buffer[0];
 
-      LoadCell.refreshDataSet();
-      LoadCell.update();
-      float i = LoadCell.getData() / SCALING_FACTOR;
-      CMD.println(i);
+      switch (commandChar) {
+        case 'w':
+          // read weight
 
-      if (DEBUG_PRINT) {
-        unsigned long endTime = millis();  // Record the end time
-        // Calculate and print the elapsed time
-        unsigned long dt = endTime - startTime;
-        CMD.println("Time taken (dt): " + String(dt) + " ms");
-      }  //if
-    }    //if
+          if (DEBUG_PRINT)
+            logMessage("reading weight");
 
-    if (cmdChar == 't') {
+          readWeight();
+          break;
 
-      if (DEBUG_PRINT) {
-        CMD.println("taring");  // Print cmdChar for debugging
+        case 't':
+          // tare scale
+          tare_scale();
+          break;
+
+        case 'c':
+          // calibrate scale (factor)
+          calibrate();
+          break;
+
+        case 'f':
+          // read calibration factor
+          CMD.println(String(CALIBRATION_FACTOR));
+          break;
+
+        default:
+          if (DEBUG_PRINT)
+            logMessage("Invalid command");
+          break;
       }
+    }  // EVAL
 
-      tare_scale();
+    // RX
+    if (receiving) {
+      // Store received bytes in buffer
+      if (bufferIndex < sizeof(buffer)) {
+        buffer[bufferIndex++] = incomingByte;
+      }
+    }  // RX
+  }    // while
+}  // loop
 
-      CMD.println("t");
 
-    }  //if
+void logMessage(const String& msg) {
+  CMD.print("LOG: ");
+  CMD.println(msg);
+}  // end:log
 
-    if (cmdChar == 'c') {
 
-      calibrate();
-    }  //if
+void sendFloatAsBytes(float value) {
+  union {
+    float f;
+    byte b[4];
+  } data;
 
-    if (cmdChar == 'r') {
+  data.f = value;
 
-      CMD.println("{'calibration_factor': " + String(CALIBRATION_FACTOR) + "}");
-    }  //if
+  for (int i = 0; i < 4; i++) {
+    CMD.write(data.b[i]);
+  }
+}  // end:float
 
-  }  //cmd serial input
-}  //loop
+void readWeight() {
+  if (DEBUG_PRINT)
+    logMessage("fct: readWeight");
 
-// Function to tare the scale
+  // LoadCell.refreshDataSet();
+  LoadCell.update();
+  float i = LoadCell.getData() / SCALING_FACTOR;
+  // sendFloatAsBytes(i);
+  CMD.println(String(i));
+}  // end: read weight
+
 int tare_scale() {
   // LoadCell.tareNoDelay();  // Start tare without delay
   LoadCell.tare();  // Start tare (blocking)
-
-  // unsigned long startTime = millis();  // Track the time to avoid infinite waiting
-
-  // // Wait for the tare process to finish, with a timeout
-  // if (LoadCell.getTareStatus() == true) {
-  //   Serial.println("Tare complete");
-  // }
-  // while (LoadCell.getTareStatus() != true) {
-  //   // Check if the process has taken too long
-  //   if (millis() - startTime > 5000) {  // 5-second timeout, adjust as needed
-  //     return 1;  // Tare failed due to timeout
-  //   }
-  //   delay(10);  // Small delay to avoid busy-waiting too aggressively
-  // }
-
-  // // If the tare is complete, send confirmation byte and return 0 (success)
-  // CMD.write(0);  // Send confirmation byte (0) after tare completion
-  // return 0;  // Tare succeeded
-}
+}  // end: tare
 
 
 void calibrate() {
   LoadCell.setCalFactor(1.0);  // Reset calibration factor to default
   tare_scale();                // Tare the scale before calibration
 
-  CMD.println("Make sure to send 'c' calibrate command and known mass float each without line ending!");
-  CMD.println("Please enter the known mass (in grams) and press Enter:");
+  logMessage("Make sure to send 'c' calibrate command and known mass float each without line ending!");
+  logMessage("Please enter the known mass (in grams) and press Enter:");
   while (!CMD.available()) {
     // Wait for the user to submit the known mass
     delay(100);
@@ -138,10 +171,10 @@ void calibrate() {
 
   // Read the known mass input from serial
   float known_mass = CMD.parseFloat();
-  CMD.print("Known mass received: ");
-  CMD.println(known_mass);  // Confirm receipt of known mass
+  logMessage("Known mass received: ");
+  logMessage(String(known_mass));  // Confirm receipt of known mass
 
-  CMD.println("Now, please place the known weight on the scale and press 'a' to begin calibration.");
+  logMessage("Now, please place the known weight on the scale and press 'a' to begin calibration.");
 
   boolean weight_added = false;
   while (!weight_added) {
@@ -154,12 +187,12 @@ void calibrate() {
         LoadCell.refreshDataSet();  // Refresh data from the load cell
         float new_calibration_factor = LoadCell.getNewCalibration(known_mass);
 
-        CMD.print("New calibration factor: ");
-        CMD.println(new_calibration_factor);
+        logMessage("New calibration factor: ");
+        logMessage(String(new_calibration_factor));
 
         weight_added = true;  // Calibration is complete
       }
     }
     delay(10);  // Short delay to avoid excessive CPU usage
-  }
-}
+  }             // while
+}  // end: calibrate
