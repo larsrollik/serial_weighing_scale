@@ -79,7 +79,9 @@ class SerialConnection:
 
             # is open?
             if self.connection.is_open:
-                logging.info(f"Connected to {self.serial_port} at {self.baudrate} baud.")
+                logging.info(
+                    f"Connected to {self.serial_port} at {self.baudrate} baud."
+                )
             else:
                 logging.error(f"Failed to open serial port {self.serial_port}.")
 
@@ -101,7 +103,9 @@ class SerialConnection:
             data = [data]
 
         # encode str to bytes
-        data_encoded = [item.encode() if isinstance(item, str) else item for item in data]
+        data_encoded = [
+            item.encode() if isinstance(item, str) else item for item in data
+        ]
 
         # pack the data
         data_packed = struct.pack(order, *data_encoded)
