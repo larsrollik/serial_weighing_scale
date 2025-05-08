@@ -7,9 +7,32 @@ from serial_weighing_scale.connection import SerialConnection
 
 
 class Scale(SerialConnection):
+    _identity_response = "<SerialWeighingScale>"
+
     def __init__(self, serial_port: str, baudrate: int = 115200, timeout: float = 1) -> None:
         # init serial connection
         super().__init__(serial_port=serial_port, baudrate=baudrate, timeout=timeout)
+
+    def start(self, timeout=10) -> None:
+        """
+        Start the scale.
+        """
+        # connect, then wait for identity response / is_ready
+        self.connect()
+
+        # wait for identity response
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            # check if the scale is ready
+            if self.is_ready and self.identify():
+                logging.info(f"Scale is ready: {self.serial_port}")
+                break
+
+        else:
+            raise TimeoutError(
+                f"Timeout while waiting for identity response ({self._identity_response}) "
+                f"from {self.serial_port}"
+            )
 
     @property
     def is_ready(self) -> bool:
@@ -40,6 +63,15 @@ class Scale(SerialConnection):
         Tare the scale.
         """
         self.send(command="t", order="c")
+
+    def identify(self) -> bool:
+        """
+        Identify the device connected to the serial port.
+        This method sends a command to the device and waits for a response.
+        """
+        self.send(command="i", order="c")
+        response = self.read_line()
+        return response == self._identity_response
 
     def get_calibration_factor(self) -> float | None:
         """

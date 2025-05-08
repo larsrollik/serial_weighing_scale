@@ -41,44 +41,28 @@ import time
 from serial_weighing_scale import SerialWeighingScale
 
 serial_port = "/dev/ttyACM0"  # for Unix systems. "COM1" on Windows systems
-scale = SerialWeighingScale(port=serial_port)
+scale = SerialWeighingScale(serial_port=serial_port)
 scale.connect()
 
-while not scale.scale_is_ready():
+while not scale.is_ready:
     time.sleep(.1)
 
 # Perform standard operations
-scale.tare_scale()  # Tare scale
+scale.tare()  # Tare scale
 scale.read_weight()  # Take single measurement
-scale.read_weight_repeated(n_readings=5)  # Get n readings
-scale.read_weight_reliable(n_readings=5, measure=np.mean)  # Get statistic of n readings
+scale.read_weight_repeated(n_readings=5, inter_read_delay=.1)  # Get n readings
+scale.read_weight_reliable(n_readings=5, inter_read_delay=.1, measure=np.mean)  # Get statistic of n readings
 
 ```
 
 ##### Open connection by testing specific serial ports sequentially
 ```python
-import time
-
 from serial_weighing_scale import connect_serial_scale
 
-scale = connect_serial_scale(test_ports=["/dev/ttyACM0", "/dev/ttyACM1"])
-while not scale.scale_is_ready():
-    time.sleep(.1)
+scale = connect_serial_scale(serial_port_list=["/dev/ttyACM0", "/dev/ttyACM1"])
 
-```
+# ...
 
-##### Not yet implemented: Calibrate scale via python
-```python
-import time
-
-from serial_weighing_scale import connect_serial_scale
-
-scale = connect_serial_scale(test_ports=["/dev/ttyACM0", "/dev/ttyACM1"])
-while not scale.scale_is_ready():
-    time.sleep(.1)
-
-known_mass = 45.05  # weight [gram] of object used for claibration
-scale.calibrate(known_mass=known_mass)
 ```
 
 
@@ -86,6 +70,8 @@ scale.calibrate(known_mass=known_mass)
 
 - Tare scale: send "t" -> Tare scale & Arduino confirms with "t"
 - Read scale: send "w" -> Arduino returns latest reading
+- Read calibration factor: send "f" -> Arduino returns calibration factor
+
 - Calibrate scale: send "c" + weight of known mass
   - Arduino confirms by sending known mass value back
   - Send "a" once known mass was placed on scale -> Arduino performs calibration & returns new calibration factor that needs to be added to `serial_scale.ino`
@@ -98,7 +84,7 @@ scale.calibrate(known_mass=known_mass)
 
 ## NOTES
 - calibration for first scale with 28.22g weight: -3150
-- calibration for second scale with 45.05g weight: -2894
+- calibration for second scale with 28.22g weight: -2894
 
 ### Contributors
 Code & electronics by Lars Rollik.

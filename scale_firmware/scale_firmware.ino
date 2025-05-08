@@ -12,27 +12,25 @@
 
 // DEFINITIONS
 #define CMD Serial
-#define HX711_DOUT 2              // DATA
-#define HX711_SCK 3               // CLOCK
-#define SAMPLES_IN_USE 1          // number of samples to average for measurement, less will cause more noise but faster response
-#define CALIBRATION_FACTOR -3150  // CHANGE THIS VALUE FROM CALIBRATION RESULT
+#define HX711_DOUT 2      // DATA
+#define HX711_SCK 3       // CLOCK
+#define SAMPLES_IN_USE 1  // number of samples to average for measurement, less will cause more noise but faster response
+// #define CALIBRATION_FACTOR -3150  // CHANGE THIS VALUE FROM CALIBRATION RESULT  // scale 1
+#define CALIBRATION_FACTOR -2630  // CHANGE THIS VALUE FROM CALIBRATION RESULT  // scale 2
 #define SCALING_FACTOR 1.0
 #define STABILIZING_TIME 2000  // precision right after power-up can be improved by adding a few seconds of stabilizing time
 #define PERFORM_TARE true      // set to false if you don't want tare to be performed in the next step
 #define DEBUG_PRINT false
-
+#define ID_STRING "<SerialWeighingScale>"
 
 // INSTANCE of LoadCell object
 HX711_ADC LoadCell(HX711_DOUT, HX711_SCK);
 
 
 void setup() {
+  // establish communication
   CMD.begin(115200);
-  while (!CMD)
-    ;
 
-  identifyMyself();
-  
   // initialize the scale
   LoadCell.begin();
   LoadCell.start(STABILIZING_TIME, PERFORM_TARE);
@@ -44,11 +42,15 @@ void setup() {
       ;
   } else {
     LoadCell.setCalFactor(CALIBRATION_FACTOR);
-
-    if (DEBUG_PRINT)
-      logMessage("ready.");
-
   }
+
+  while (!CMD)
+    ;
+
+  identifyMyself();
+
+  if (DEBUG_PRINT)
+    logMessage("ready");
 }  // setup
 
 
@@ -131,7 +133,7 @@ void loop() {
 }  // loop
 
 void identifyMyself() {
-  CMD.println("<SerialWeighingScale>");
+  CMD.println(ID_STRING);
 }
 
 void logMessage(const String& msg) {
