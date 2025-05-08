@@ -7,7 +7,7 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
 
     serial_param = {
-        "serial_port": "/dev/ttyACM0",
+        "serial_port": "/dev/ttyACM1",
         "baudrate": 115200,
         "timeout": 1,
     }

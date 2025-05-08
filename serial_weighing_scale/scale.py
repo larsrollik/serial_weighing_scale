@@ -25,7 +25,8 @@ class Scale(SerialConnection):
         while time.time() - start_time < timeout:
             # check if the scale is ready
             if self.is_ready and self.identify():
-                logging.info(f"Scale is ready: {self.serial_port}")
+                elapsed_time = time.time() - start_time
+                logging.info(f"Scale is ready: {self.serial_port} (after {elapsed_time:.2f}s)")
                 break
 
         else:
