@@ -1,11 +1,13 @@
 /*
-   Adapted example from HX711 library for `serial_weighing_scale`. Lars Rollik, nov2021.
-   github.com/larsrollik/serial_weighing_scale
-   -------------------------------------------------------------------------------------
-   HX711_ADC
-   Arduino library for HX711 24-Bit Analog-to-Digital Converter for Weight Scales
-   Olav Kallhovd sept2017
-   -------------------------------------------------------------------------------------
+  Firmware version: "2.0.2"
+  -------------------------------------------------------------------------------------
+  Adapted example from HX711 library for `serial_weighing_scale`. Lars Rollik, nov2021.
+  github.com/larsrollik/serial_weighing_scale
+  -------------------------------------------------------------------------------------
+  HX711_ADC
+  Arduino library for HX711 24-Bit Analog-to-Digital Converter for Weight Scales
+  Olav Kallhovd sept2017
+  -------------------------------------------------------------------------------------
 */
 
 #include <HX711_ADC.h>
@@ -22,10 +24,16 @@
 #define PERFORM_TARE true      // set to false if you don't want tare to be performed in the next step
 #define DEBUG_PRINT false
 #define ID_STRING "<SerialWeighingScale>"
+#define BUFFER_SIZE 10
 
 // INSTANCE of LoadCell object
 HX711_ADC LoadCell(HX711_DOUT, HX711_SCK);
 
+float buffer[BUFFER_SIZE];
+uint8_t bufIndex = 0;
+bool bufFilled = false;
+// Sampling flag set by ISR
+volatile bool sampleFlag = false;
 
 void setup() {
   // establish communication
@@ -35,6 +43,7 @@ void setup() {
   LoadCell.begin();
   LoadCell.start(STABILIZING_TIME, PERFORM_TARE);
   LoadCell.setSamplesInUse(SAMPLES_IN_USE);
+  LoadCell.setGain(128);
 
   if (LoadCell.getTareTimeoutFlag()) {
     logMessage("Timeout, check MCU>HX711 wiring and pin designations");
@@ -51,12 +60,43 @@ void setup() {
 
   if (DEBUG_PRINT)
     logMessage("ready");
+
+  // Initialize buffer
+  for (int i = 0; i < BUFFER_SIZE; i++) {
+    buffer[i] = 0;
+  }
+
+  // --- Timer1 Setup for 100ms interrupts ---
+  noInterrupts();  // Disable interrupts during setup
+
+  TCCR1A = 0;  // Clear Timer/Counter Control Registers
+  TCCR1B = 0;
+  TCNT1 = 0;  // Clear timer counter
+
+  // Set compare match register for 100ms interval
+  // Formula: OCR1A = (16*10^6) / (prescaler * frequency) - 1
+  // For 10Hz (100ms): OCR1A = 16,000,000 / (64 * 10) - 1 = 24,999
+  OCR1A = 24999;
+  TCCR1B |= (1 << WGM12);               // CTC mode
+  TCCR1B |= (1 << CS11) | (1 << CS10);  // Prescaler 64
+  TIMSK1 |= (1 << OCIE1A);              // Enable Timer1 compare interrupt
+
+  interrupts();  // Enable global interrupts
+
 }  // setup
 
 
 void loop() {
+  if (sampleFlag) {
+    sampleFlag = false;
+
+    if (LoadCell.update()) {
+      addToBuffer(LoadCell.getData());
+    }
+  }//if
+
   //   LoadCell.refreshDataSet();
-  LoadCell.update();
+  // LoadCell.update();
   //   float i = LoadCell.getData() / SCALING_FACTOR;
 
   static byte startByte = '<';
@@ -97,7 +137,8 @@ void loop() {
           if (DEBUG_PRINT)
             logMessage("reading weight");
 
-          readWeight();
+          // readWeight();
+          CMD.println(String(getRollingAverage(2)));
           break;
 
         case 't':
@@ -131,6 +172,43 @@ void loop() {
     }  // RX
   }    // while
 }  // loop
+
+
+// Timer interrupt handler for sampling
+void sampleLoadCell() {
+  if (LoadCell.update()) {
+    float sample = LoadCell.getData();  // Read sample from HX711
+    addToBuffer(sample);
+  }
+}
+
+// Timer1 ISR every 100ms
+ISR(TIMER1_COMPA_vect) {
+  sampleFlag = true;
+}
+
+// Add the new sample to the buffer
+void addToBuffer(float val) {
+  buffer[bufIndex++] = val;
+  if (bufIndex >= BUFFER_SIZE) {
+    bufIndex = 0;
+    bufFilled = true;
+  }
+}
+
+float getRollingAverage(int precision) {
+  uint8_t size = bufFilled ? BUFFER_SIZE : bufIndex;
+  if (size == 0) return 0.0;
+
+  float sum = 0;
+  for (uint8_t i = 0; i < size; i++) sum += buffer[i];
+  float avg = sum / size;
+
+  // Round to specified precision
+  float factor = pow(10, precision);
+  return round(avg * factor) / factor;
+}
+
 
 void identifyMyself() {
   CMD.println(ID_STRING);
