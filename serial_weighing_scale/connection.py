@@ -1,6 +1,5 @@
 import logging
 import struct
-import time
 from typing import Any
 
 from serial import Serial
@@ -11,7 +10,7 @@ class SerialConnection:
     baudrate: int
     timeout: float
     connection: Serial
-    _identity_response = "<SerialWeighingScale>"
+    _connected = False
 
     def __init__(
         self,
@@ -46,47 +45,29 @@ class SerialConnection:
             f"timeout={self.timeout}"
         )
 
+    def __del__(self) -> None:
+        self.disconnect()
+
     @property
     def connected(self) -> bool:
-        if self.connection is not None:
-            return self.connection.is_open
-        else:
-            return False
+        return self._connected
 
-    def connect(self, connection_timeout: float = 5) -> "SerialConnection":
+    def connect(self) -> "SerialConnection":
         if not self.connected:
             self.connection = Serial(
                 port=self.serial_port,
                 baudrate=self.baudrate,
                 timeout=self.timeout,
             )
-
-            # identify device
-            start_time = time.time()
-            while time.time() - start_time < connection_timeout:
-                if self.connection.in_waiting:
-                    response = self.read_line()
-                    if response.startswith(self._identity_response):
-                        logging.info(
-                            f"Identity response received: {response} from {self.serial_port}"
-                        )
-                        break
-            else:
-                raise TimeoutError(
-                    f"Timeout while waiting for identity response ({self._identity_response}) "
-                    f"from {self.serial_port}"
-                )
-
             # is open?
             if self.connection.is_open:
-                logging.info(
-                    f"Connected to {self.serial_port} at {self.baudrate} baud."
-                )
+                logging.info(f"Connected to {self.serial_port} at {self.baudrate} baud.")
             else:
                 logging.error(f"Failed to open serial port {self.serial_port}.")
 
-        # clear buffer
-        self.connection.read(self.connection.in_waiting)
+        # finalize connection
+        self._connected = True
+        self._clear_buffer()
 
         return self
 
@@ -94,6 +75,7 @@ class SerialConnection:
         if self.connection is not None:
             self.connection.close()
             self.connection = None
+            self._connected = False
             logging.info(f"Disconnected from {self.serial_port}.")
 
     def _encode(self, data: Any, order: str) -> bytes:
@@ -103,9 +85,7 @@ class SerialConnection:
             data = [data]
 
         # encode str to bytes
-        data_encoded = [
-            item.encode() if isinstance(item, str) else item for item in data
-        ]
+        data_encoded = [item.encode() if isinstance(item, str) else item for item in data]
 
         # pack the data
         data_packed = struct.pack(order, *data_encoded)
