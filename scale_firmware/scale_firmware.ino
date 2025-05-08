@@ -1,5 +1,5 @@
 /*
-  Firmware version: "2.0.3.dev0"
+  Firmware version: "2.0.3"
   -------------------------------------------------------------------------------------
   Adapted example from HX711 library for `serial_weighing_scale`. Lars Rollik, nov2021.
   github.com/larsrollik/serial_weighing_scale
