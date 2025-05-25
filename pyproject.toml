@@ -45,6 +45,7 @@ dev = [
     "pre-commit",
     "toml",
     "types-PyYAML",
+    "types-pyserial",
 ]
 
 [project.entry-points.console_scripts]
