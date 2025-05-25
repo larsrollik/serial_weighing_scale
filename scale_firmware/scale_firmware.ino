@@ -1,8 +1,8 @@
 /*
   Firmware version: "2.0.3"
   -------------------------------------------------------------------------------------
-  Adapted example from HX711 library for `serial_weighing_scale`. Lars Rollik, nov2021.
-  github.com/larsrollik/serial_weighing_scale
+  Adapted example from HX711 library for `serial-weighing-scale`. Lars Rollik, nov2021.
+  github.com/larsrollik/serial-weighing-scale
   -------------------------------------------------------------------------------------
   HX711_ADC
   Arduino library for HX711 24-Bit Analog-to-Digital Converter for Weight Scales
