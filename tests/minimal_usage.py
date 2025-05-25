@@ -1,13 +1,21 @@
 import logging
+from typing import TypedDict
 
 from serial_weighing_scale import SerialWeighingScale
+
+
+class ScaleConfig(TypedDict):
+    serial_port: str
+    baudrate: int
+    timeout: float
+
 
 if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    serial_param = {
-        "serial_port": "/dev/ttyACM0",
+    serial_param: ScaleConfig = {
+        "serial_port": "/dev/ttyACM1",
         "baudrate": 115200,
         "timeout": 1,
     }
