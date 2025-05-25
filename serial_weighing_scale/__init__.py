@@ -7,7 +7,7 @@ from serial_weighing_scale.scale import Scale
 try:
     __version__ = version("subject_weight_db")
 except PackageNotFoundError:
-    __version__ = "2.0.4.dev0"
+    __version__ = "2.0.4"
 
 DEFAULT_TEST_PORTS = [f"/dev/ttyACM{x}" for x in range(5)]
 
